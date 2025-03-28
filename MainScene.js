@@ -17,6 +17,13 @@ const UI_STYLES = {
 class MainScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MainScene' });
+        this.filteredVerses = []
+    }
+
+    preload() {
+        this.load.json('bibleVerses', 'assets/bibleVerses.json');
+        this.load.json('keyPassages', 'assets/keyPassages.json');
+        this.load.json('bibleBooks', 'assets/bibleBooks.json');
     }
 
     create() {
@@ -78,7 +85,6 @@ class MainScene extends Phaser.Scene {
             { main: "Setup Call Type", sub: "Select a call type to begin." },
             { main: "Setup Drill Content", sub: "Select drill content to include." },
             { main: "Select Custom Content", sub: "Select the content you would like to practice with." },
-            { main: "Drill Practice", sub: "Let's practice!" },
         ];
     
         this.currentPage = 0;
@@ -96,18 +102,20 @@ class MainScene extends Phaser.Scene {
         } else if (this.currentPage === 3 && localStorage.getItem("selectedContent") === 'All') {
             this.nextPage();
             this.drillStart();
+        } else if (this.currentPage === 3 && localStorage.getItem("selectedContent") === 'customChoose') {
+            this.drillStart();
+            
         }
     }
 
     nextPage() {
-        
         // Storage logs
-        if (localStorage.getItem("selectedCompletionCall") && !localStorage.getItem("selectedContent")) {
-            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCompletionCall"));
+        if (localStorage.getItem("selectedCall") && !localStorage.getItem("selectedContent")) {
+            //console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCall"));
         } else if (localStorage.getItem("selectedContent")) {
-            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCompletionCall") + " Content: " + localStorage.getItem("selectedContent"));
+            //console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCall") + " Content: " + localStorage.getItem("selectedContent"));
         } else {
-            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion"));
+            //console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion"));
         }
         
         if (this.currentPage < this.setupPagesArray.length - 1) {
@@ -130,53 +138,99 @@ class MainScene extends Phaser.Scene {
     }
 
     drillStart() {
-        console.log('drill started...');
+        // Organize array data
+        this.setupArrays();
+        
+        if (localStorage.getItem("selectedContent") === 'All') {
+            this.mainText.setText("");
+            this.subText.setText("");
+            this.drillContainer = this.add.dom(this.width / 2, this.centerY - 180).createFromHTML(`
+                <div style="text-align: center; font-family: Arial; color: #ffffff;">
+                ALL
+                </div>
+            `);
+        } else {
+
+// Create container for the form
+this.drillContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
+    <div id="customForm" style="
+        text-align: center;
+        font-family: Arial;
+        color: #ffffff;
+        padding: 15px;
+        border-radius: 10px;
+        width: 250px;">
+        
+        <div id="verseSelectionContainer" 
+             style="text-align: left; display: inline-block; 
+                    max-height: 200px; overflow-y: auto; width: 100%;
+                    border: 1px solid #ffffff; padding: 10px; border-radius: 5px;">
+            ${this.filteredVerses.map(verse => {
+                // Determine what to display based on object structure
+                let displayText = verse.name || verse.verse_ul || "Unknown Verse";
+                let idValue = verse.name || verse.verse_ul || "unknown";
+
+                return `
+                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                        <input type="checkbox" id="verse_${idValue}" value="${idValue}" 
+                               style="margin-right: 8px; transform: scale(1.2);">
+                        <label for="verse_${idValue}" style="cursor: pointer;">${displayText}</label>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+
+        <button id="submitSelection" style="
+            margin-top: 10px; background: #e74c3c; color: #ffffff; 
+            border: none; padding: 8px 15px; border-radius: 5px;
+            cursor: pointer; font-size: 14px;">
+            Save Selection
+        </button>
+    </div>
+`);
+
+// Handle selection update
+document.getElementById('submitSelection').addEventListener('click', () => {
+    this.updateCustomArray();
+});
+
+
+
+            //
+        }
     }
 
-    createSelectionForm() {
-        this.formContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
-            <div style="text-align: center; font-family: Arial; color: #ffffff;">
-                <div style="display: flex; justify-content: center; gap: 40px;">
-                    <div>
-                        <strong>Color:</strong><br>
-                        <input type="radio" id="colorBlue" name="color" value="Blue">
-                        <label for="colorBlue">Blue</label><br>
-                        <input type="radio" id="colorGreen" name="color" value="Green">
-                        <label for="colorGreen">Green</label><br>
-                        <input type="radio" id="colorRed" name="color" value="Red">
-                        <label for="colorRed">Red</label><br>
-                    </div>
-                    <div>
-                        <strong>Version:</strong><br>
-                        <input type="radio" id="versionKJV" name="version" value="KJV">
-                        <label for="versionKJV">KJV</label><br>
-                        <input type="radio" id="versionCSB" name="version" value="CSB">
-                        <label for="versionCSB">CSB</label><br>
-                    </div>
-                </div>
-                <br><br>
-                <button id="confirmBtn" disabled>Continue</button>
-            </div>
-        `);
+    updateCustomArray() {
+        this.customArray = []; // Reset selection
+        
+        this.filteredVerses.forEach((verse) => {
+            const checkbox = document.getElementById(`verse_${verse.name}`);
+            if (checkbox && checkbox.checked) {
+                this.customArray.push(verse);
+            }
+        });
+        
+    console.log("Updated Custom Array:" + JSON.stringify(this.customArray)); // Debug output
+    
+    }
 
-        const colorRadios = {
-            Blue: this.formContainer.node.querySelector("#colorBlue"),
-            Green: this.formContainer.node.querySelector("#colorGreen"),
-            Red: this.formContainer.node.querySelector("#colorRed"),
-        };
-        const versionRadios = {
-            KJV: this.formContainer.node.querySelector("#versionKJV"),
-            CSB: this.formContainer.node.querySelector("#versionCSB"),
-        };
+    setupArrays() {
+        const bibleVerses = this.cache.json.get('bibleVerses');
+        const keyPassages = this.cache.json.get('keyPassages');
+        const bibleBooks = this.cache.json.get('bibleBooks');
 
-        this.createSetupForm(
-            this.formContainer,
-            "confirmBtn", 
-            colorRadios, 
-            "selectedColor", 
-            versionRadios, 
-            "selectedVersion"
-        );
+        const selectedColor = localStorage.getItem('selectedColor');
+        const selectedVersion = localStorage.getItem('selectedVersion');
+        const selectedCall = localStorage.getItem('selectedCall');
+        const selectedContent = localStorage.getItem('selectedContent');
+        
+        if (selectedCall === 'CompletionCall' || selectedCall === 'QuotationCall') {
+            this.filteredVerses = bibleVerses.filter(i => i.color === selectedColor.toLowerCase() && i.vers === selectedVersion.toLowerCase());
+        } else if (selectedCall === 'KeyPassagesCall') {
+            this.filteredVerses = keyPassages.filter(i => i.color === selectedColor.toLowerCase());
+        } else {
+            this.filteredVerses = bibleBooks;
+        }
     }
 
     createSetupForm(formContainer, a_button, a_option1, a_option1Sel, a_option2 = null, a_option2Sel = null, backBtn = null) {
@@ -226,6 +280,52 @@ class MainScene extends Phaser.Scene {
         });
     }
 
+    createSelectionForm() {
+        this.formContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
+            <div style="text-align: center; font-family: Arial; color: #ffffff;">
+                <div style="display: flex; justify-content: center; gap: 40px;">
+                    <div>
+                        <strong>Color:</strong><br>
+                        <input type="radio" id="colorBlue" name="color" value="Blue">
+                        <label for="colorBlue">Blue</label><br>
+                        <input type="radio" id="colorGreen" name="color" value="Green">
+                        <label for="colorGreen">Green</label><br>
+                        <input type="radio" id="colorRed" name="color" value="Red">
+                        <label for="colorRed">Red</label><br>
+                    </div>
+                    <div>
+                        <strong>Version:</strong><br>
+                        <input type="radio" id="versionKJV" name="version" value="KJV">
+                        <label for="versionKJV">KJV</label><br>
+                        <input type="radio" id="versionCSB" name="version" value="CSB">
+                        <label for="versionCSB">CSB</label><br>
+                    </div>
+                </div>
+                <br><br>
+                <button id="confirmBtn" disabled>Continue</button>
+            </div>
+        `);
+
+        const colorRadios = {
+            Blue: this.formContainer.node.querySelector("#colorBlue"),
+            Green: this.formContainer.node.querySelector("#colorGreen"),
+            Red: this.formContainer.node.querySelector("#colorRed"),
+        };
+        const versionRadios = {
+            KJV: this.formContainer.node.querySelector("#versionKJV"),
+            CSB: this.formContainer.node.querySelector("#versionCSB"),
+        };
+
+        this.createSetupForm(
+            this.formContainer,
+            "confirmBtn", 
+            colorRadios, 
+            "selectedColor", 
+            versionRadios, 
+            "selectedVersion"
+        );
+    }
+
     createSelectionForm2() {
         // Create the form container using Phaser DOM (add.dom())
         this.formContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
@@ -258,7 +358,7 @@ class MainScene extends Phaser.Scene {
             this.formContainer,
             "confirmBtn", 
             compRadios, 
-            "selectedCompletionCall", 
+            "selectedCall", 
             null, 
             null,
             "backBtn" // ? Back button
