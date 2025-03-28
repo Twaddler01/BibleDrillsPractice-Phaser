@@ -77,7 +77,8 @@ class MainScene extends Phaser.Scene {
             { main: "Setup Color and Version", sub: "Select a color and version to continue." },
             { main: "Setup Call Type", sub: "Select a call type to begin." },
             { main: "Setup Drill Content", sub: "Select drill content to include." },
-            { main: "Confirm Choices", sub: "Are you ready to start?" }
+            { main: "Select Custom Content", sub: "Select the content you would like to practice with." },
+            { main: "Drill Practice", sub: "Let's practice!" },
         ];
     
         this.currentPage = 0;
@@ -92,11 +93,25 @@ class MainScene extends Phaser.Scene {
             this.createSelectionForm2();
         } else if (this.currentPage === 2) {
             this.createSelectionForm3();
+        } else if (this.currentPage === 3 && localStorage.getItem("selectedContent") === 'All') {
+            this.nextPage();
+            this.drillStart();
         }
     }
 
     nextPage() {
+        
+        // Storage logs
+        if (localStorage.getItem("selectedCompletionCall") && !localStorage.getItem("selectedContent")) {
+            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCompletionCall"));
+        } else if (localStorage.getItem("selectedContent")) {
+            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCompletionCall") + " Content: " + localStorage.getItem("selectedContent"));
+        } else {
+            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion"));
+        }
+        
         if (this.currentPage < this.setupPagesArray.length - 1) {
+            this.formContainer.destroy(); // Ckear form
             this.currentPage++;
             this.updatePage();
         }
@@ -104,6 +119,7 @@ class MainScene extends Phaser.Scene {
     
     prevPage() {
         if (this.currentPage > 0) {
+            this.formContainer.destroy(); // Ckear form
             this.currentPage--;
             this.updatePage();
         }
@@ -113,23 +129,8 @@ class MainScene extends Phaser.Scene {
         }
     }
 
-    // Function to transition to the next page or scene
-    startNextPage() {
-        if (localStorage.getItem("selectedCompletionCall") && !localStorage.getItem("selectedContent")) {
-            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCompletionCall"));
-        } else if (localStorage.getItem("selectedContent")) {
-            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion") + " Call Type: " + localStorage.getItem("selectedCompletionCall") + " Content: " + localStorage.getItem("selectedContent"));
-        } else {
-            console.log("next Color: " + localStorage.getItem("selectedColor") + " Version: " + localStorage.getItem("selectedVersion"));
-        }
-        this.formContainer.destroy(); // Ckear form after confirming
-        this.nextPage();
-    }
-
-    // Function to transition to the previous page or scene
-    startPrevioudPage() {
-        this.formContainer.destroy(); // Ckear form after confirming
-        this.prevPage();
+    drillStart() {
+        console.log('drill started...');
     }
 
     createSelectionForm() {
@@ -212,7 +213,7 @@ class MainScene extends Phaser.Scene {
         
             // Set up the event listener for the "Back" button
             backBtn.addEventListener("click", () => {
-                this.startPrevioudPage();
+                this.prevPage();
             });
         }
     
@@ -221,7 +222,7 @@ class MainScene extends Phaser.Scene {
             if (a_option2 && a_option2Sel) {
                 localStorage.setItem(a_option2Sel, Object.keys(a_option2).find(v => a_option2[v].checked));
             }
-            this.startNextPage();
+            this.nextPage();
         });
     }
 
