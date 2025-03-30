@@ -137,81 +137,217 @@ class MainScene extends Phaser.Scene {
         }
     }
 
+    doDrills(arrayType = []) {
+        // Set all & custom arrays to 'filteredVerses'
+        this.filteredVerses = arrayType;
+
+        console.log("Array Used:" + JSON.stringify(this.filteredVerses)); // Debug output
+
+        //// Use and move or clear?
+        this.mainText.setText("");
+        this.subText.setText("");
+        const customForm = document.getElementById('customForm');
+        if (customForm) customForm.remove();
+
+const selectedCall = localStorage.getItem('selectedCall');
+let drillString = [];
+this.filteredVerses.forEach(item => {
+    if (selectedCall === 'CompletionCall') {
+        drillString.push({
+            type: 'CompletionCall',
+            drill: `<strong><u>${item.verse_ul}</u></strong>`,
+            ans: `${item.verse}<br><strong>${item.ref}</strong>`
+        });
+    } else if (selectedCall === 'QuotationCall') {
+        drillString.push({
+            drill: `${item.verse_ul}${item.verse}`,
+            ans: `<br><strong>${item.ref}</strong>`
+        });
+    } else if (selectedCall === 'KeyPassagesCall') {
+        drillString.push({
+            drill: `${item.name}`,
+            ans: `<br><strong>${item.ref}</strong>`
+        });
+    } else {
+        drillString.push({
+            drill: `${item.book}`,
+            ans: `<br><strong>${item.ba}</strong>`
+        });
+    }
+});
+
+this.drillContainer = this.add.dom(this.width / 4, this.centerY - 190).createFromHTML(`
+    <div style="color: white; max-width: 80%;">
+        <h2>PRACTICE</h2>
+        <div style="display: flex; gap: 10px; justify-content: left;">
+            <button id="prevDrill" style="visibility: hidden;">Previous</button>
+            <button id="nextDrill">Next</button>
+        </div>
+        <div id="drillContent"></div>
+        <div id="drillAnswer"></div>
+        <button id="answerDrill">See Answer</button>
+    </div>
+`);
+
+// Drill navigation logic
+let currentDrillIndex = 0;  // Start with the first drill
+
+// Function to update the drill display
+function updateDrillDisplay() {
+    let currentDrill = drillString[currentDrillIndex];
+    let drillContent = currentDrill.drill;
+    let drillAnswer = currentDrill.ans;
+
+    // Update content display
+    document.getElementById('drillContent').innerHTML = drillContent;
+    document.getElementById('drillAnswer').innerHTML = '';  // Clear previous answer
+    document.getElementById('answerDrill').style.visibility = 'visible';  // Show the answer button
+
+    // Show the correct drill navigation buttons
+    document.getElementById('prevDrill').style.visibility = (currentDrillIndex === 0) ? 'hidden' : 'visible';
+    document.getElementById('nextDrill').style.visibility = (currentDrillIndex === drillString.length - 1) ? 'hidden' : 'visible';
+}
+
+// Move to the next drill
+function moveToNextDrill() {
+    if (currentDrillIndex < drillString.length - 1) {
+        currentDrillIndex++;
+        updateDrillDisplay();
+    }
+}
+
+// Move to the previous drill
+function moveToPreviousDrill() {
+    if (currentDrillIndex > 0) {
+        currentDrillIndex--;
+        updateDrillDisplay();
+    }
+}
+
+// Answer reveal functionality
+document.getElementById('answerDrill').addEventListener('click', () => {
+    let currentDrill = drillString[currentDrillIndex];
+    if (selectedCall === 'CompletionCall') {
+        document.getElementById('drillContent').innerHTML = currentDrill.drill + currentDrill.ans;
+    } else {
+        document.getElementById('drillAnswer').innerHTML = currentDrill.ans;
+    }
+    document.getElementById('answerDrill').style.visibility = 'hidden';  // Hide answer button
+});
+
+// Button navigation
+document.getElementById('nextDrill').addEventListener('click', moveToNextDrill);
+document.getElementById('prevDrill').addEventListener('click', moveToPreviousDrill);
+
+// Initialize the first drill
+updateDrillDisplay();
+
+
+
+
+
+
+
+
+    }
+
     drillStart() {
         // Organize array data
         this.setupArrays();
         
         if (localStorage.getItem("selectedContent") === 'All') {
-            this.mainText.setText("");
-            this.subText.setText("");
-            this.drillContainer = this.add.dom(this.width / 2, this.centerY - 180).createFromHTML(`
-                <div style="text-align: center; font-family: Arial; color: #ffffff;">
-                ALL
+           this.doDrills(this.filteredVerses);
+        } else {
+            // Create container for the form
+            this.drillContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
+                <div id="customForm" style="
+                    text-align: center;
+                    font-family: Arial;
+                    color: #ffffff;
+                    padding: 15px;
+                    border-radius: 10px;
+                    width: 250px;">
+                    
+                    <div id="verseSelectionContainer" 
+                         style="text-align: left; display: inline-block; 
+                                max-height: 200px; overflow-y: auto; width: 100%;
+                                border: 1px solid #ffffff; padding: 10px; border-radius: 5px;">
+                        ${this.filteredVerses.map((verse, index) => {
+                            // Determine what to display based on object structure
+                            let displayText = verse.name || verse.verse_ul || verse.book;
+                            if (verse.verse_ul) {
+                                displayText = `${index+1}. ${verse.verse_ul}${verse.verse}<br>(${verse.ref})`;
+                            }
+                            let idValue = encodeURIComponent(verse.name || verse.verse_ul || verse.book); // Ensure unique IDs
+            
+                            return `
+                                <div id="container_${idValue}" class="verse-container" 
+                                     data-id="${idValue}" style="display: flex; align-items: center; 
+                                     margin-bottom: 5px; border: 1px solid white; background-color: black; 
+                                     padding: 5px; cursor: pointer;">
+                                    ${displayText}
+                                </div>
+                                `;
+                        }).join('')}
+                    </div>
+            
+                    <button id="submitSelection" style="
+                        margin-top: 10px; background: #e74c3c; color: #ffffff; 
+                        border: none; padding: 8px 15px; border-radius: 5px;
+                        cursor: pointer; font-size: 14px;">
+                        Save Selection
+                    </button>
                 </div>
             `);
-        } else {
-
-// Create container for the form
-this.drillContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
-    <div id="customForm" style="
-        text-align: center;
-        font-family: Arial;
-        color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
-        width: 250px;">
-        
-        <div id="verseSelectionContainer" 
-             style="text-align: left; display: inline-block; 
-                    max-height: 200px; overflow-y: auto; width: 100%;
-                    border: 1px solid #ffffff; padding: 10px; border-radius: 5px;">
-            ${this.filteredVerses.map(verse => {
-                // Determine what to display based on object structure
-                let displayText = verse.name || verse.verse_ul || "Unknown Verse";
-                let idValue = verse.name || verse.verse_ul || "unknown";
-
-                return `
-                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                        <input type="checkbox" id="verse_${idValue}" value="${idValue}" 
-                               style="margin-right: 8px; transform: scale(1.2);">
-                        <label for="verse_${idValue}" style="cursor: pointer;">${displayText}</label>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-
-        <button id="submitSelection" style="
-            margin-top: 10px; background: #e74c3c; color: #ffffff; 
-            border: none; padding: 8px 15px; border-radius: 5px;
-            cursor: pointer; font-size: 14px;">
-            Save Selection
-        </button>
-    </div>
-`);
-
-// Handle selection update
-document.getElementById('submitSelection').addEventListener('click', () => {
-    this.updateCustomArray();
-});
-
-
-
-            //
+            
+            // Store reference to 'this' outside the event listener
+            const self = this; // Preserve reference to the class instance
+            
+            setTimeout(() => {
+                document.querySelectorAll('.verse-container').forEach(container => {
+                    container.addEventListener('click', function() {
+                        const verseId = this.dataset.id;
+                        const verse = self.filteredVerses.find(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId);
+                        
+                        if (verse) {
+                            // Toggle selection
+                            const isSelected = this.classList.toggle('selected');
+                            this.style.backgroundColor = isSelected ? 'green' : 'black';
+            
+                            // Ensure self.customArray is initialized
+                            if (!self.customArray) self.customArray = [];
+            
+                            // Update selection array
+                            if (isSelected) {
+                                self.customArray.push(verse);
+                            } else {
+                                self.customArray = self.customArray.filter(v => v !== verse);
+                            }
+                        }
+                    });
+                });
+            }, 0);
+            
+            // Handle selection update
+            document.getElementById('submitSelection').addEventListener('click', () => {
+                this.updateCustomArray();
+            });
         }
     }
 
     updateCustomArray() {
         this.customArray = []; // Reset selection
         
-        this.filteredVerses.forEach((verse) => {
-            const checkbox = document.getElementById(`verse_${verse.name}`);
-            if (checkbox && checkbox.checked) {
+        document.querySelectorAll('.verse-container.selected').forEach(container => {
+            const verseId = container.dataset.id;
+            const verse = this.filteredVerses.find(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId);
+            
+            if (verse) {
                 this.customArray.push(verse);
             }
         });
-        
-    console.log("Updated Custom Array:" + JSON.stringify(this.customArray)); // Debug output
     
+        this.doDrills(this.customArray);
     }
 
     setupArrays() {
