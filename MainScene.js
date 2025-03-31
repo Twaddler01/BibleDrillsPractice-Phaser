@@ -32,27 +32,146 @@ class MainScene extends Phaser.Scene {
         this.setupPages();
     }
 
+    updateEditIcons() {
+        // Re-fetch stored values
+        const selectedColor = localStorage.getItem('selectedColor');
+        const selectedVersion = localStorage.getItem('selectedVersion');
+        let selectedCall = localStorage.getItem('selectedCall');
+        const selectedContent = localStorage.getItem('selectedContent');
+    
+        // Update visibility based on stored values
+        this.editColorIcon.setVisible(!!selectedColor);
+        this.colorText_val.setText(selectedColor);
+        this.editVersionIcon.setVisible(!!selectedVersion);
+        this.versionText_val.setText(selectedVersion);
+        this.editCallIcon.setVisible(!!selectedCall);
+//// WIP Modify strings
+        if (selectedCall === 'CompletionCall') {
+            selectedCall = 'Completion';
+        }
+        this.callType_val.setText(selectedCall);
+        this.editContentIcon.setVisible(!!selectedContent);
+        this.contentType_val.setText(selectedContent);
+    }
+
     createUI() {
         // Setting up the main UI components
         this.width = this.scale.width;
         this.height = this.scale.height;
 
         // **TOP BOX (Header UI)**
-        let topBoxHeight = this.height * 0.15;
-        let topBox = this.add.rectangle(this.width / 2, this.height * 0.1, this.width * 0.9, topBoxHeight, 0x0000ff);
+        let topBox = this.add.rectangle(this.width / 2, this.height / 6, this.width * 0.9, this.height * 0.3, 0x0000ff);
         topBox.setStrokeStyle(4, 0xffffff);
-        this.add.text(this.width / 2, this.height * 0.1, "BIBLE DRILLS PRACTICE", {
-            fontSize: 30,
+        this.add.text(this.width / 2, this.height * 0.09, "BIBLE DRILLS PRACTICE", {
+            fontSize: 24,
             color: "#ffffff"
         }).setOrigin(0.5);
+        
+        // **TOP BOX (Selected options)
+        let topBoxWidth = this.width * 0.9;
+        let topBoxHeight = 90;
+        let topBoxX = this.width / 2;
+        let topBoxY = this.height / 3 - 70;
+        
+        let topBoxOptions = this.add.rectangle(topBoxX, topBoxY, topBoxWidth, topBoxHeight, 0x8c0f0f);
+        topBoxOptions.setStrokeStyle(4, 0xffffff);
+        
+        // Add text labels (offset so they appear inside the box)
+        let colorText = this.add.text(topBoxX - 120, topBoxY - 30, 'Color: ', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        this.colorText_val = this.add.text(topBoxX - 80, topBoxY - 30, 'NA', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        let versionText = this.add.text(topBoxX - 120, topBoxY - 10, 'Version: ', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        this.versionText_val = this.add.text(topBoxX - 65, topBoxY - 10, 'NA', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        let callType = this.add.text(topBoxX + 10, topBoxY - 30, 'Call Type: ', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        this.callType_val = this.add.text(topBoxX + 75, topBoxY - 30, 'NA', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        let contentType = this.add.text(topBoxX + 10, topBoxY - 10, 'Content: ', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        this.contentType_val = this.add.text(topBoxX + 68, topBoxY - 10, 'NA', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontFamily: 'Arial'
+        });
+        
+        // Retrieve stored values
+        const selectedColor = localStorage.getItem('selectedColor');
+        const selectedVersion = localStorage.getItem('selectedVersion');
+        const selectedCall = localStorage.getItem('selectedCall');
+        const selectedContent = localStorage.getItem('selectedContent');
+        
+        // Function to create an edit icon if the corresponding value is available
+        this.createEditIcon = (x, y, key, callback) => {
+            if (!key) return null; // Only create the icon if the value exists
+        
+            let editIcon = this.add.text(x, y, '[ EDIT ]', {
+                fontSize: '10px',
+                fill: '#ffff00',
+                fontFamily: 'Arial'
+            }).setInteractive();
+        
+            editIcon.on('pointerdown', callback);
+            return editIcon;
+        }
+    
+        // Create edit icons
+        this.editColorIcon = this.createEditIcon(topBoxX - 155, topBoxY - 30, 'selectedColor', () => {
+            console.log('Edit Color clicked');
+        });
+    
+        this.editVersionIcon = this.createEditIcon(topBoxX - 155, topBoxY - 10, 'selectedVersion', () => {
+            console.log('Edit Version clicked');
+        });
+    
+        this.editCallIcon = this.createEditIcon(topBoxX - 25, topBoxY - 30, 'selectedCall', () => {
+            console.log('Edit Call clicked');
+        });
+    
+        this.editContentIcon = this.createEditIcon(topBoxX - 25, topBoxY - 10, 'selectedContent', () => {
+            console.log('Edit Content clicked');
+        });
+    
+        // Update visibility of icons
+        this.updateEditIcons();
 
         // **MAIN BOX (Game Area)**
-        this.mainBoxHeight = this.height - (topBox.y + topBoxHeight / 2) - 50;
+        this.mainBoxHeight = this.height / 1.5;
         this.mainBox = this.add.rectangle(
             this.width / 2, 
-            topBox.y + topBoxHeight / 2 + 50 + this.mainBoxHeight / 2, 
+            this.mainBoxHeight - 15, 
             this.width * 0.9, 
-            this.mainBoxHeight * 0.98, 
+            this.mainBoxHeight + 25, 
             0x333333
         );
         this.mainBox.setStrokeStyle(4, 0xffffff);
@@ -104,7 +223,6 @@ class MainScene extends Phaser.Scene {
             this.drillStart();
         } else if (this.currentPage === 3 && localStorage.getItem("selectedContent") === 'customChoose') {
             this.drillStart();
-            
         }
     }
 
@@ -121,6 +239,7 @@ class MainScene extends Phaser.Scene {
         if (this.currentPage < this.setupPagesArray.length - 1) {
             this.formContainer.destroy(); // Ckear form
             this.currentPage++;
+            this.updateEditIcons();
             this.updatePage();
         }
     }
@@ -137,6 +256,10 @@ class MainScene extends Phaser.Scene {
         }
     }
 
+    selectedOptionsBar() {
+        
+    }
+
     doDrills(arrayType = []) {
         // Set all & custom arrays to 'filteredVerses'
         this.filteredVerses = arrayType;
@@ -149,106 +272,95 @@ class MainScene extends Phaser.Scene {
         const customForm = document.getElementById('customForm');
         if (customForm) customForm.remove();
 
-const selectedCall = localStorage.getItem('selectedCall');
-let drillString = [];
-this.filteredVerses.forEach(item => {
-    if (selectedCall === 'CompletionCall') {
-        drillString.push({
-            type: 'CompletionCall',
-            drill: `<strong><u>${item.verse_ul}</u></strong>`,
-            ans: `${item.verse}<br><strong>${item.ref}</strong>`
+        const selectedCall = localStorage.getItem('selectedCall');
+        let drillString = [];
+        this.filteredVerses.forEach(item => {
+            if (selectedCall === 'CompletionCall') {
+                drillString.push({
+                    type: 'CompletionCall',
+                    drill: `<strong><u>${item.verse_ul}</u></strong>`,
+                    ans: `${item.verse}<br><strong>${item.ref}</strong>`
+                });
+            } else if (selectedCall === 'QuotationCall') {
+                drillString.push({
+                    drill: `${item.ref}`,
+                    ans: `${item.verse_ul}${item.verse}`
+                });
+            } else if (selectedCall === 'KeyPassagesCall') {
+                drillString.push({
+                    drill: `${item.name}`,
+                    ans: `<strong>${item.ref}</strong>`
+                });
+            } else {
+                drillString.push({
+                    drill: `${item.book}`,
+                    ans: `${item.ba}`
+                });
+            }
         });
-    } else if (selectedCall === 'QuotationCall') {
-        drillString.push({
-            drill: `${item.verse_ul}${item.verse}`,
-            ans: `<br><strong>${item.ref}</strong>`
+        
+        this.drillContainer = this.add.dom(this.width / 4, this.height / 3).createFromHTML(`
+                <button id="prevDrill" style="visibility: hidden;">Previous</button>
+                <button id="nextDrill">Next</button>
+                <div id="drillContent"></div>
+                <div id="drillAnswer"></div>
+                <button id="answerDrill">See Answer</button>
+        `);
+        this.drillContainer.node.style.color = 'white';
+        this.drillContainer.node.style.width = '80%';
+        
+        // Drill navigation logic
+        let currentDrillIndex = 0;  // Start with the first drill
+        
+        // Function to update the drill display
+        function updateDrillDisplay() {
+            let currentDrill = drillString[currentDrillIndex];
+            let drillContent = currentDrill.drill;
+            let drillAnswer = currentDrill.ans;
+        
+            // Update content display
+            document.getElementById('drillContent').innerHTML = drillContent;
+            document.getElementById('drillAnswer').innerHTML = '';  // Clear previous answer
+            document.getElementById('answerDrill').style.visibility = 'visible';  // Show the answer button
+        
+            // Show the correct drill navigation buttons
+            document.getElementById('prevDrill').style.visibility = (currentDrillIndex === 0) ? 'hidden' : 'visible';
+            document.getElementById('nextDrill').style.visibility = (currentDrillIndex === drillString.length - 1) ? 'hidden' : 'visible';
+        }
+        
+        // Move to the next drill
+        function moveToNextDrill() {
+            if (currentDrillIndex < drillString.length - 1) {
+                currentDrillIndex++;
+                updateDrillDisplay();
+            }
+        }
+        
+        // Move to the previous drill
+        function moveToPreviousDrill() {
+            if (currentDrillIndex > 0) {
+                currentDrillIndex--;
+                updateDrillDisplay();
+            }
+        }
+        
+        // Answer reveal functionality
+        document.getElementById('answerDrill').addEventListener('click', () => {
+            let currentDrill = drillString[currentDrillIndex];
+            if (selectedCall === 'CompletionCall') {
+                document.getElementById('drillContent').innerHTML = currentDrill.drill + currentDrill.ans;
+            } else {
+                document.getElementById('drillAnswer').innerHTML = currentDrill.ans;
+            }
+            document.getElementById('answerDrill').style.visibility = 'hidden';  // Hide answer button
         });
-    } else if (selectedCall === 'KeyPassagesCall') {
-        drillString.push({
-            drill: `${item.name}`,
-            ans: `<br><strong>${item.ref}</strong>`
-        });
-    } else {
-        drillString.push({
-            drill: `${item.book}`,
-            ans: `<br><strong>${item.ba}</strong>`
-        });
-    }
-});
-
-this.drillContainer = this.add.dom(this.width / 4, this.centerY - 190).createFromHTML(`
-    <div style="color: white; max-width: 80%;">
-        <h2>PRACTICE</h2>
-        <div style="display: flex; gap: 10px; justify-content: left;">
-            <button id="prevDrill" style="visibility: hidden;">Previous</button>
-            <button id="nextDrill">Next</button>
-        </div>
-        <div id="drillContent"></div>
-        <div id="drillAnswer"></div>
-        <button id="answerDrill">See Answer</button>
-    </div>
-`);
-
-// Drill navigation logic
-let currentDrillIndex = 0;  // Start with the first drill
-
-// Function to update the drill display
-function updateDrillDisplay() {
-    let currentDrill = drillString[currentDrillIndex];
-    let drillContent = currentDrill.drill;
-    let drillAnswer = currentDrill.ans;
-
-    // Update content display
-    document.getElementById('drillContent').innerHTML = drillContent;
-    document.getElementById('drillAnswer').innerHTML = '';  // Clear previous answer
-    document.getElementById('answerDrill').style.visibility = 'visible';  // Show the answer button
-
-    // Show the correct drill navigation buttons
-    document.getElementById('prevDrill').style.visibility = (currentDrillIndex === 0) ? 'hidden' : 'visible';
-    document.getElementById('nextDrill').style.visibility = (currentDrillIndex === drillString.length - 1) ? 'hidden' : 'visible';
-}
-
-// Move to the next drill
-function moveToNextDrill() {
-    if (currentDrillIndex < drillString.length - 1) {
-        currentDrillIndex++;
+        
+        // Button navigation
+        document.getElementById('nextDrill').addEventListener('click', moveToNextDrill);
+        document.getElementById('prevDrill').addEventListener('click', moveToPreviousDrill);
+        
+        // Initialize the first drill
         updateDrillDisplay();
-    }
-}
-
-// Move to the previous drill
-function moveToPreviousDrill() {
-    if (currentDrillIndex > 0) {
-        currentDrillIndex--;
-        updateDrillDisplay();
-    }
-}
-
-// Answer reveal functionality
-document.getElementById('answerDrill').addEventListener('click', () => {
-    let currentDrill = drillString[currentDrillIndex];
-    if (selectedCall === 'CompletionCall') {
-        document.getElementById('drillContent').innerHTML = currentDrill.drill + currentDrill.ans;
-    } else {
-        document.getElementById('drillAnswer').innerHTML = currentDrill.ans;
-    }
-    document.getElementById('answerDrill').style.visibility = 'hidden';  // Hide answer button
-});
-
-// Button navigation
-document.getElementById('nextDrill').addEventListener('click', moveToNextDrill);
-document.getElementById('prevDrill').addEventListener('click', moveToPreviousDrill);
-
-// Initialize the first drill
-updateDrillDisplay();
-
-
-
-
-
-
-
-
     }
 
     drillStart() {
