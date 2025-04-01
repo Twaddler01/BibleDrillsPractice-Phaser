@@ -116,7 +116,7 @@ class MainScene extends Phaser.Scene {
         topBoxOptions.setStrokeStyle(4, 0xffffff);
 
         // **DYNAMIC TEXT POSITIONS (RELATIVE TO THE CONTAINER)**
-        let baseX = -optionsBoxWidth / 2 + 20; // Start from left
+        let baseX = -optionsBoxWidth / 2.8; // Start from left
         let textY = -optionsBoxHeight / 3;
 
         let fontSize = Math.max(18, this.width * 0.025); // Scale font size dynamically
@@ -124,36 +124,36 @@ class MainScene extends Phaser.Scene {
         // **Text val Position - 1 character space (~10px)**
         let spacing = 10; 
 
-        let colorText = this.add.text(baseX, textY, 'Color:', { fontSize, fill: '#ffffff' });
-        this.colorText_val = this.add.text(colorText.x + colorText.width + spacing, textY, 'NA', { fontSize, fill: '#ffffff' });
+        this.colorText = this.add.text(baseX, textY, 'Color:', { fontSize, fill: '#ffffff' });
+        this.colorText_val = this.add.text(this.colorText.x + this.colorText.width + spacing, textY, 'NA', { fontSize, fill: '#ffffff' });
 
-        let versionText = this.add.text(baseX + 200, textY, 'Version:', { fontSize, fill: '#ffffff' });
+        let versionText = this.add.text(this.colorText.width / 1.5, textY, 'Version:', { fontSize, fill: '#ffffff' });
         this.versionText_val = this.add.text(versionText.x + versionText.width + spacing, textY, 'NA', { fontSize, fill: '#ffffff' });
 
-        let callType = this.add.text(baseX, textY + 30, 'Call Type:', { fontSize, fill: '#ffffff' });
-        this.callType_val = this.add.text(callType.x + callType.width + spacing, textY + 30, 'NA', { fontSize, fill: '#ffffff' });
+        this.callType = this.add.text(baseX, textY + 30, 'Call Type:', { fontSize, fill: '#ffffff' });
+        this.callType_val = this.add.text(this.callType.x + this.callType.width + spacing, textY + 30, 'NA', { fontSize, fill: '#ffffff' });
 
-        let contentType = this.add.text(baseX, textY + 60, 'Content:', { fontSize, fill: '#ffffff' });
-        this.contentType_val = this.add.text(contentType.x + contentType.width + spacing, textY + 60, 'NA', { fontSize, fill: '#ffffff' });
+        this.contentType = this.add.text(baseX, textY + 60, 'Content:', { fontSize, fill: '#ffffff' });
+        this.contentType_val = this.add.text(this.contentType.x + this.contentType.width + spacing, textY + 60, 'NA', { fontSize, fill: '#ffffff' });
 
         // **ADD EVERYTHING TO THE CONTAINER**
         this.optionsContainer.add([
             topBoxOptions, // Add the background first
-            colorText, this.colorText_val,
+            this.colorText, this.colorText_val,
             versionText, this.versionText_val,
-            callType, this.callType_val,
-            contentType, this.contentType_val
+            this.callType, this.callType_val,
+            this.contentType, this.contentType_val
         ]);
 
         // **Ensure Proper Depth (Text on Top)**
         topBoxOptions.setDepth(0);
-        colorText.setDepth(1);
+        this.colorText.setDepth(1);
         this.colorText_val.setDepth(1);
         versionText.setDepth(1);
         this.versionText_val.setDepth(1);
-        callType.setDepth(1);
+        this.callType.setDepth(1);
         this.callType_val.setDepth(1);
-        contentType.setDepth(1);
+        this.contentType.setDepth(1);
         this.contentType_val.setDepth(1);
     }
 
@@ -180,8 +180,14 @@ class MainScene extends Phaser.Scene {
             return editIcon;
         }
     
+
+        let labelWidth = this.colorText.x - 48;
+        let labelHeightColor = this.colorText.y;
+        let labelHeightCallType = this.callType.y;
+        let labelHeightContentType = this.contentType.y;
+
         // Create edit icons
-        this.editColorIcon = this.createEditIcon(topBoxX - 155, topBoxY - 45, 'selectedColor', () => {
+        this.editColorIcon = this.createEditIcon(labelWidth, labelHeightColor, 'selectedColor', () => {
             if (this.drillContainer) this.drillContainer.destroy();
             this.currentPage = 0;
             this.updatePage();
@@ -189,7 +195,7 @@ class MainScene extends Phaser.Scene {
             this.changeOptions();
         });
         
-        this.editCallIcon = this.createEditIcon(topBoxX - 155, topBoxY - 15, 'selectedCall', () => {
+        this.editCallIcon = this.createEditIcon(labelWidth, labelHeightCallType, 'selectedCall', () => {
             if (this.drillContainer) this.drillContainer.destroy();
             this.currentPage = 1;
             this.updatePage();
@@ -197,7 +203,7 @@ class MainScene extends Phaser.Scene {
             this.changeOptions();
         });
     
-        this.editContentIcon = this.createEditIcon(topBoxX - 155, topBoxY + 15, 'selectedContent', () => {
+        this.editContentIcon = this.createEditIcon(labelWidth, labelHeightContentType, 'selectedContent', () => {
             if (this.drillContainer) this.drillContainer.destroy();
             this.currentPage = 2;
             this.updatePage();
