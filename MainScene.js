@@ -17,7 +17,7 @@ const UI_STYLES = {
 class MainScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MainScene' });
-        this.filteredVerses = []
+        this.filteredVerses = [];
     }
 
     preload() {
@@ -42,7 +42,6 @@ class MainScene extends Phaser.Scene {
         // Update visibility based on stored values
         this.editColorIcon.setVisible(!!selectedColor);
         this.colorText_val.setText(selectedColor);
-        this.editVersionIcon.setVisible(!!selectedVersion);
         this.versionText_val.setText(selectedVersion);
         this.editCallIcon.setVisible(!!selectedCall);
 //// WIP Modify strings
@@ -66,65 +65,109 @@ class MainScene extends Phaser.Scene {
             fontSize: 24,
             color: "#ffffff"
         }).setOrigin(0.5);
+
+        // **MAIN BOX (Game Area)**
+        this.mainBox = this.add.rectangle(
+            this.width / 2, 
+            this.height / 1.63, 
+            this.width * 0.9, 
+            this.height / 1.3, 
+            0x333333
+        );
+        this.mainBox.setStrokeStyle(4, 0xffffff);
         
+        // **Content Container for aligning text and buttons**
+        this.centerY = this.mainBox.y;
+        this.contentContainer = this.add.container(this.width / 2, this.centerY);
+        
+        // Create Title Text (Main Text)
+        this.mainText = this.add.text(0, -120, "", {
+            fontSize: 28,
+            color: "#ffffff"
+        }).setOrigin(0.5);
+        
+        // Create Subtext Description (Sub Text)
+        this.subText = this.add.text(0, -40, "", {
+            fontSize: 20,
+            color: "#ffffff",
+            wordWrap: { width: this.mainBox.width * 0.8, useAdvancedWrap: true },
+            align: "center"
+        }).setOrigin(0.5);
+        
+        // Add both texts to the container
+        this.contentContainer.add([this.mainText, this.subText]);
+
         // **TOP BOX (Selected options)
         let topBoxWidth = this.width * 0.9;
-        let topBoxHeight = 90;
+        let topBoxHeight = 130;
         let topBoxX = this.width / 2;
-        let topBoxY = this.height / 3 - 70;
+        let topBoxY = this.height / 3 - 50;
         
         let topBoxOptions = this.add.rectangle(topBoxX, topBoxY, topBoxWidth, topBoxHeight, 0x8c0f0f);
         topBoxOptions.setStrokeStyle(4, 0xffffff);
         
         // Add text labels (offset so they appear inside the box)
-        let colorText = this.add.text(topBoxX - 120, topBoxY - 30, 'Color: ', {
-            fontSize: '14px',
+        let colorText = this.add.text(topBoxX - 120, topBoxY - 50, 'Color: ', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
-        this.colorText_val = this.add.text(topBoxX - 80, topBoxY - 30, 'NA', {
-            fontSize: '14px',
+        this.colorText_val = this.add.text(topBoxX - 50, topBoxY - 50, 'NA', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
-        let versionText = this.add.text(topBoxX - 120, topBoxY - 10, 'Version: ', {
-            fontSize: '14px',
+        let versionText = this.add.text(topBoxX + 20, topBoxY - 50, 'Version: ', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
-        this.versionText_val = this.add.text(topBoxX - 65, topBoxY - 10, 'NA', {
-            fontSize: '14px',
+        this.versionText_val = this.add.text(topBoxX + 110, topBoxY - 50, 'NA', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
-        let callType = this.add.text(topBoxX + 10, topBoxY - 30, 'Call Type: ', {
-            fontSize: '14px',
+        let callType = this.add.text(topBoxX - 120, topBoxY - 20, 'Call Type: ', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
-        this.callType_val = this.add.text(topBoxX + 75, topBoxY - 30, 'NA', {
-            fontSize: '14px',
+        this.callType_val = this.add.text(topBoxX - 10, topBoxY - 20, 'NA', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
-        let contentType = this.add.text(topBoxX + 10, topBoxY - 10, 'Content: ', {
-            fontSize: '14px',
+        let contentType = this.add.text(topBoxX - 120, topBoxY + 10, 'Content: ', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
-        this.contentType_val = this.add.text(topBoxX + 68, topBoxY - 10, 'NA', {
-            fontSize: '14px',
+        this.contentType_val = this.add.text(topBoxX - 20, topBoxY + 10, 'NA', {
+            fontSize: '24px',
             fill: '#ffffff',
             fontFamily: 'Arial'
         });
         
+        // Add to container
+        this.optionsContainer = this.add.container(topBoxX - 180, topBoxY - 155);
+        this.optionsContainer.add([
+            colorText, 
+            this.colorText_val,
+            versionText,
+            this.versionText_val,
+            callType,
+            this.callType_val,
+            contentType,
+            this.contentType_val
+        ]);
+
         // Retrieve stored values
         const selectedColor = localStorage.getItem('selectedColor');
         const selectedVersion = localStorage.getItem('selectedVersion');
@@ -146,56 +189,48 @@ class MainScene extends Phaser.Scene {
         }
     
         // Create edit icons
-        this.editColorIcon = this.createEditIcon(topBoxX - 155, topBoxY - 30, 'selectedColor', () => {
-            console.log('Edit Color clicked');
+        this.editColorIcon = this.createEditIcon(topBoxX - 155, topBoxY - 45, 'selectedColor', () => {
+            if (this.drillContainer) this.drillContainer.destroy();
+            this.currentPage = 0;
+            this.updatePage();
+            // change button
+            this.changeOptions();
+        });
+        
+        this.editCallIcon = this.createEditIcon(topBoxX - 155, topBoxY - 15, 'selectedCall', () => {
+            if (this.drillContainer) this.drillContainer.destroy();
+            this.currentPage = 1;
+            this.updatePage();
+            // change button
+            this.changeOptions();
         });
     
-        this.editVersionIcon = this.createEditIcon(topBoxX - 155, topBoxY - 10, 'selectedVersion', () => {
-            console.log('Edit Version clicked');
+        this.editContentIcon = this.createEditIcon(topBoxX - 155, topBoxY + 15, 'selectedContent', () => {
+            if (this.drillContainer) this.drillContainer.destroy();
+            this.currentPage = 2;
+            this.updatePage();
+            // change button
+            this.changeOptions();
         });
-    
-        this.editCallIcon = this.createEditIcon(topBoxX - 25, topBoxY - 30, 'selectedCall', () => {
-            console.log('Edit Call clicked');
-        });
-    
-        this.editContentIcon = this.createEditIcon(topBoxX - 25, topBoxY - 10, 'selectedContent', () => {
-            console.log('Edit Content clicked');
-        });
-    
+
+        this.optionsContainer.add([
+            this.editColorIcon,
+            this.editCallIcon,
+            this.editContentIcon
+        ]);
+
         // Update visibility of icons
         this.updateEditIcons();
+    }
 
-        // **MAIN BOX (Game Area)**
-        this.mainBoxHeight = this.height / 1.5;
-        this.mainBox = this.add.rectangle(
-            this.width / 2, 
-            this.mainBoxHeight - 15, 
-            this.width * 0.9, 
-            this.mainBoxHeight + 25, 
-            0x333333
-        );
-        this.mainBox.setStrokeStyle(4, 0xffffff);
+    changeOptions() {
+
+        let backBtn = document.getElementById('backBtn');
+        if (backBtn) backBtn.remove();
+        let confirmBtn = document.getElementById('confirmBtn');
+        if (confirmBtn) confirmBtn.innerHTML = 'Change';
         
-        // **Content Container for aligning text and buttons**
-        this.centerY = this.mainBox.y;
-        this.contentContainer = this.add.container(this.width / 2, this.centerY);
-        
-        // Create Title Text (Main Text)
-        this.mainText = this.add.text(0, -180, "", {
-            fontSize: 28,
-            color: "#ffffff"
-        }).setOrigin(0.5);
-        
-        // Create Subtext Description (Sub Text)
-        this.subText = this.add.text(0, -80, "", {
-            fontSize: 20,
-            color: "#ffffff",
-            wordWrap: { width: this.mainBox.width * 0.8, useAdvancedWrap: true },
-            align: "center"
-        }).setOrigin(0.5);
-        
-        // Add both texts to the container
-        this.contentContainer.add([this.mainText, this.subText]);
+        this.onChange = true;
     }
 
     setupPages() {
@@ -213,10 +248,17 @@ class MainScene extends Phaser.Scene {
     updatePage() {
         this.mainText.setText(this.setupPagesArray[this.currentPage].main);
         this.subText.setText(this.setupPagesArray[this.currentPage].sub);
-        
+
+        if (this.currentPage === 0) {
+            this.formContainer.destroy();
+            this.createSelectionForm();
+        }
+
         if (this.currentPage === 1) {
+            this.formContainer.destroy();
             this.createSelectionForm2();
         } else if (this.currentPage === 2) {
+            this.formContainer.destroy();
             this.createSelectionForm3();
         } else if (this.currentPage === 3 && localStorage.getItem("selectedContent") === 'All') {
             this.nextPage();
@@ -254,10 +296,6 @@ class MainScene extends Phaser.Scene {
         if (this.currentPage === 0) {
             this.createSelectionForm();
         }
-    }
-
-    selectedOptionsBar() {
-        
     }
 
     doDrills(arrayType = []) {
@@ -299,7 +337,7 @@ class MainScene extends Phaser.Scene {
             }
         });
         
-        this.drillContainer = this.add.dom(this.width / 4, this.height / 3).createFromHTML(`
+        this.drillContainer = this.add.dom(this.width / 4, this.height / 3 + 50).createFromHTML(`
                 <button id="prevDrill" style="visibility: hidden;">Previous</button>
                 <button id="nextDrill">Next</button>
                 <div id="drillContent"></div>
@@ -471,7 +509,8 @@ class MainScene extends Phaser.Scene {
         const selectedVersion = localStorage.getItem('selectedVersion');
         const selectedCall = localStorage.getItem('selectedCall');
         const selectedContent = localStorage.getItem('selectedContent');
-        
+        this.allSelected = !!(selectedColor && selectedVersion && selectedCall && selectedContent);
+
         if (selectedCall === 'CompletionCall' || selectedCall === 'QuotationCall') {
             this.filteredVerses = bibleVerses.filter(i => i.color === selectedColor.toLowerCase() && i.vers === selectedVersion.toLowerCase());
         } else if (selectedCall === 'KeyPassagesCall') {
@@ -524,6 +563,13 @@ class MainScene extends Phaser.Scene {
             if (a_option2 && a_option2Sel) {
                 localStorage.setItem(a_option2Sel, Object.keys(a_option2).find(v => a_option2[v].checked));
             }
+            
+            ////
+            if (this.onChange) {
+                // Set to last page to setup drill next
+                this.currentPage = 2;
+                this.onChange = false;
+            }
             this.nextPage();
         });
     }
@@ -550,6 +596,7 @@ class MainScene extends Phaser.Scene {
                     </div>
                 </div>
                 <br><br>
+                <div id="changeDiv"></div>
                 <button id="confirmBtn" disabled>Continue</button>
             </div>
         `);
@@ -590,6 +637,7 @@ class MainScene extends Phaser.Scene {
                         <label for="bookCall">Book Call</label><br>
                 </div>
                <br><br>
+                <div id="changeDiv"></div>
                 <button id="backBtn">Back</button>
                 <button id="confirmBtn" disabled>Continue</button>
             </div>
@@ -625,6 +673,7 @@ class MainScene extends Phaser.Scene {
                         <label for="contentCustom">Custom (choose)</label><br>
                 </div>
                <br><br>
+               <div id="changeDiv"></div>
                <button id="backBtn">Back</button>
                <button id="confirmBtn" disabled>Continue</button>
             </div>
