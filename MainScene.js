@@ -30,6 +30,29 @@ class MainScene extends Phaser.Scene {
         this.createUI();
         this.createSelectionForm();  // Create the form using DOM elements
         this.setupPages();
+
+        // customArray, allArray
+        const selectedColor = localStorage.getItem('selectedColor');
+        const selectedVersion = localStorage.getItem('selectedVersion');
+        const selectedCall = localStorage.getItem('selectedCall');
+        const selectedContent = localStorage.getItem('selectedContent');
+        let savedData = !!(selectedColor && selectedVersion && selectedCall && selectedContent);
+        if (savedData) {
+            if (this.formContainer) this.formContainer.destroy();
+            // Retrieve 'all' data
+            const retrievedAllArray = JSON.parse(localStorage.getItem("allArray")) || [];
+            // Retrieve 'custom' data
+            const retrievedCustomArray = JSON.parse(localStorage.getItem("customArray")) || [];
+            if (retrievedAllArray.length > 0) {
+                this.doDrills(retrievedAllArray);
+                this.updateSelections();
+                this.setEditIcons();
+            } else if (retrievedCustomArray.length > 0) {
+                this.doDrills(retrievedCustomArray);
+                this.updateSelections();
+                this.setEditIcons();
+            }
+        }
     }
 
     updateSelections() {
@@ -42,7 +65,15 @@ class MainScene extends Phaser.Scene {
         // Update values based on stored values
         this.colorText_val.setText(selectedColor);
         this.versionText_val.setText(selectedVersion);
-        this.contentType_val.setText(selectedContent);
+        if (selectedContent === 'customChoose') {
+            if (this.customArray) {
+                this.contentType_val.setText('Custom (' + this.customArray.length + ')');
+            } else {
+                this.contentType_val.setText('Custom (0)');
+            }
+        } else {
+            this.contentType_val.setText(selectedContent);
+        }
 
         // Modify strings for output
         let selectedCallString = null;
@@ -119,7 +150,7 @@ class MainScene extends Phaser.Scene {
         let baseX = -optionsBoxWidth / 2.8; // Start from left
         let textY = -optionsBoxHeight / 3;
 
-        let fontSize = Math.max(18, this.width * 0.025); // Scale font size dynamically
+        let fontSize = Math.max(16, this.width * 0.025); // Scale font size dynamically
 
         // **Text val Position - 1 character space (~10px)**
         let spacing = 10; 
@@ -158,13 +189,11 @@ class MainScene extends Phaser.Scene {
     }
 
     setEditIcons() {
+        
+        if (this.editColorIcon && this.editCallIcon && this.editContentIcon) return;
+        
         let topBoxX = this.width / 2;
         let topBoxY = this.height / 3 - 50;
-
-        // Retrieve stored values
-        const selectedColor = localStorage.getItem('selectedColor');
-        const selectedCall = localStorage.getItem('selectedCall');
-        const selectedContent = localStorage.getItem('selectedContent');
 
         // Function to create an edit icon if the corresponding value is available
         this.createEditIcon = (x, y, key, callback) => {
@@ -181,7 +210,7 @@ class MainScene extends Phaser.Scene {
         }
     
 
-        let labelWidth = this.colorText.x - 48;
+        let labelWidth = this.colorText.x - 36;
         let labelHeightColor = this.colorText.y;
         let labelHeightCallType = this.callType.y;
         let labelHeightContentType = this.contentType.y;
@@ -216,6 +245,11 @@ class MainScene extends Phaser.Scene {
             this.editCallIcon,
             this.editContentIcon
         ]);
+
+        // Retrieve stored values
+        const selectedColor = localStorage.getItem('selectedColor');
+        const selectedCall = localStorage.getItem('selectedCall');
+        const selectedContent = localStorage.getItem('selectedContent');
 
         // Update visibility of options
         this.editColorIcon.setVisible(!!selectedColor);
@@ -426,7 +460,10 @@ class MainScene extends Phaser.Scene {
         this.setupArrays();
         
         if (localStorage.getItem("selectedContent") === 'All') {
-           this.doDrills(this.filteredVerses);
+            // Store array data
+            localStorage.setItem("allArray", JSON.stringify(this.filteredVerses));
+            if (localStorage.getItem("customArray")) localStorage.removeItem("customArray");
+            this.doDrills(this.filteredVerses);
         } else {
             // Create container for the form
             this.drillContainer = this.add.dom(this.width / 1.65, this.centerY + 130).createFromHTML(`
@@ -537,9 +574,13 @@ class MainScene extends Phaser.Scene {
             
             if (verse) {
                 this.customArray.push(verse);
+                this.contentType_val.setText('Custom (' + this.customArray.length + ')');
             }
         });
     
+        // Store custom data
+        localStorage.setItem("customArray", JSON.stringify(this.customArray));
+        if (localStorage.getItem("allArray")) localStorage.removeItem("allArray");
         this.doDrills(this.customArray);
     }
 
@@ -552,7 +593,6 @@ class MainScene extends Phaser.Scene {
         const selectedVersion = localStorage.getItem('selectedVersion');
         const selectedCall = localStorage.getItem('selectedCall');
         const selectedContent = localStorage.getItem('selectedContent');
-        this.allSelected = !!(selectedColor && selectedVersion && selectedCall && selectedContent);
 
         if (selectedCall === 'CompletionCall' || selectedCall === 'QuotationCall') {
             this.filteredVerses = bibleVerses.filter(i => i.color === selectedColor.toLowerCase() && i.vers === selectedVersion.toLowerCase());
