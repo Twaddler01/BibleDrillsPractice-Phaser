@@ -43,19 +43,19 @@ class MainScene extends Phaser.Scene {
             const retrievedAllArray = JSON.parse(localStorage.getItem("allArray")) || [];
             // Retrieve 'custom' data
             const retrievedCustomArray = JSON.parse(localStorage.getItem("customArray")) || [];
-            if (retrievedAllArray.length > 0) {
+            if (retrievedAllArray.length > 0 && selectedContent === 'All') {
                 this.doDrills(retrievedAllArray);
                 this.updateSelections();
                 this.setEditIcons();
-            } else if (retrievedCustomArray.length > 0) {
+            } else if (retrievedCustomArray.length > 0 && selectedContent === 'customChoose') {
                 this.doDrills(retrievedCustomArray);
-                this.updateSelections();
+                this.updateSelections(retrievedCustomArray);
                 this.setEditIcons();
             }
         }
     }
 
-    updateSelections() {
+    updateSelections(currentArray = []) {
         // Re-fetch stored values
         const selectedColor = localStorage.getItem('selectedColor');
         const selectedVersion = localStorage.getItem('selectedVersion');
@@ -66,12 +66,11 @@ class MainScene extends Phaser.Scene {
         this.colorText_val.setText(selectedColor);
         this.versionText_val.setText(selectedVersion);
         if (selectedContent === 'customChoose') {
-            if (this.customArray) {
-                this.contentType_val.setText('Custom (' + this.customArray.length + ')');
-            } else {
-                this.contentType_val.setText('Custom (0)');
+            if (currentArray.length > 0) {
+                this.contentType_val.setText('Custom (' + currentArray.length + ')');
             }
         } else {
+            // 'All'
             this.contentType_val.setText(selectedContent);
         }
 
@@ -462,9 +461,20 @@ class MainScene extends Phaser.Scene {
         if (localStorage.getItem("selectedContent") === 'All') {
             // Store array data
             localStorage.setItem("allArray", JSON.stringify(this.filteredVerses));
-            if (localStorage.getItem("customArray")) localStorage.removeItem("customArray");
+            //if (localStorage.getItem("customArray")) localStorage.removeItem("customArray");
             this.doDrills(this.filteredVerses);
         } else {
+
+
+
+////
+            // Load stored array
+            if (localStorage.getItem("customArray")) {
+                this.customArray = JSON.parse(localStorage.getItem("customArray"));
+            } else {
+                this.customArray = []; // Ensure it's always an array
+            }            
+
             // Create container for the form
             this.drillContainer = this.add.dom(this.width / 1.65, this.centerY + 130).createFromHTML(`
                 <div id="customForm" style="
@@ -510,30 +520,33 @@ class MainScene extends Phaser.Scene {
             // Store reference to 'this' outside the event listener
             const self = this; // Preserve reference to the class instance
             
-            setTimeout(() => {
-                document.querySelectorAll('.verse-container').forEach(container => {
-                    container.addEventListener('click', function() {
-                        const verseId = this.dataset.id;
-                        const verse = self.filteredVerses.find(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId);
-                        
-                        if (verse) {
-                            // Toggle selection
-                            const isSelected = this.classList.toggle('selected');
-                            this.style.backgroundColor = isSelected ? 'green' : 'black';
-            
-                            // Ensure self.customArray is initialized
-                            if (!self.customArray) self.customArray = [];
-            
-                            // Update selection array
-                            if (isSelected) {
-                                self.customArray.push(verse);
-                            } else {
-                                self.customArray = self.customArray.filter(v => v !== verse);
-                            }
-                        }
-                    });
-                });
-            }, 0);
+setTimeout(() => {
+    document.querySelectorAll('.verse-container').forEach(container => {
+        const verseId = container.dataset.id;
+        const verse = self.filteredVerses.find(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId);
+
+        if (verse) {
+            // Auto-select if it was previously stored
+            if (self.customArray.some(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId)) {
+                container.classList.add('selected');
+                container.style.backgroundColor = 'green';
+                this.updateSelections();
+            }
+
+            // Click event for selection
+            container.addEventListener('click', function() {
+                const isSelected = this.classList.toggle('selected');
+                this.style.backgroundColor = isSelected ? 'green' : 'black';
+
+                if (isSelected) {
+                    self.customArray.push(verse);
+                } else {
+                    self.customArray = self.customArray.filter(v => encodeURIComponent(v.name || v.verse_ul || v.book) !== verseId);
+                }
+            });
+        }
+    });
+}, 0);
             
             // Handle selection update
             document.getElementById('submitSelection').addEventListener('click', () => {
@@ -580,7 +593,7 @@ class MainScene extends Phaser.Scene {
     
         // Store custom data
         localStorage.setItem("customArray", JSON.stringify(this.customArray));
-        if (localStorage.getItem("allArray")) localStorage.removeItem("allArray");
+        //if (localStorage.getItem("allArray")) localStorage.removeItem("allArray");
         this.doDrills(this.customArray);
     }
 
