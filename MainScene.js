@@ -14,6 +14,140 @@ const UI_STYLES = {
     backgroundColor: 0x34495e,
 };
 
+class CountdownTimer {
+    constructor(containerId, totalTime) {
+        this.container = document.getElementById(containerId);
+        this.totalTime = totalTime;
+        this.remainingTime = totalTime;
+        this.blocks = [];
+        this.interval = null;
+        this.timeIsUp = false;
+        this.createUI();
+    }
+
+    createUI() {
+        this.container.innerHTML = ''; // Clear previous content
+        this.blocks = [];
+
+        // Wrapper for styling
+        this.wrapper = document.createElement('div');
+        this.wrapper.classList.add('timer-wrapper');
+
+        // Progress Bar Container
+        this.progressBar = document.createElement('div');
+        this.progressBar.classList.add('progress-bar');
+        this.progressBar.style.visibility = 'hidden'; // Initially hidden
+
+        // Create blocks for countdown
+        this.displayBlocks = this.totalTime;
+
+        for (let i = 0; i < this.displayBlocks; i++) {
+            let block = document.createElement('div');
+            block.classList.add('block');
+            block.style.visibility = 'hidden'; // Initially hidden
+            block.style.backgroundColor = 'lightgreen';
+            block.style.width = `${100 / this.displayBlocks}%`;
+            this.blocks.push(block);
+            this.progressBar.appendChild(block);
+        }
+
+        // Status Text
+        this.statusText = document.createElement('div');
+        this.statusText.classList.add('status-text');
+        this.statusText.textContent = 'READY';
+
+        // Buttons Container
+        this.buttonContainer = document.createElement('div');
+        this.buttonContainer.classList.add('button-container');
+
+        // Start Button
+        this.startButton = document.createElement('button');
+        this.startButton.textContent = 'Start';
+        this.startButton.addEventListener('click', () => this.start());
+
+        // Reset Button
+        this.resetButton = document.createElement('button');
+        this.resetButton.textContent = 'Reset';
+        this.resetButton.addEventListener('click', () => this.reset());
+
+        // Append buttons to button container
+        this.buttonContainer.appendChild(this.startButton);
+        this.buttonContainer.appendChild(this.resetButton);
+
+        // Append elements to wrapper
+        this.wrapper.appendChild(this.progressBar);
+        this.wrapper.appendChild(this.statusText);
+        this.wrapper.appendChild(this.buttonContainer);
+        this.container.appendChild(this.wrapper);
+    }
+
+    start() {
+        if (this.interval) return; // Prevent multiple intervals
+
+        if (this.timeIsUp) {
+            // Reset state if restarting
+            this.timeIsUp = false;
+            this.remainingTime = this.totalTime;
+            this.blocks.forEach(block => {
+                block.style.visibility = 'visible';
+                block.style.backgroundColor = 'lightgreen';
+            });
+        }
+
+        // Show the progress bar when starting
+        this.progressBar.style.visibility = 'visible';
+        this.blocks.forEach(block => block.style.visibility = 'visible');
+
+        this.statusText.textContent = this.remainingTime; // Set initial countdown display
+
+        this.interval = setInterval(() => {
+            if (this.remainingTime > 0) {
+                this.remainingTime--;
+
+                let blockIndex = this.totalTime - this.remainingTime - 1;
+
+                // Remove blocks from **RIGHT to LEFT**
+                if (blockIndex < this.blocks.length) {
+                    let reverseIndex = this.blocks.length - 1 - blockIndex;
+                    this.blocks[reverseIndex].style.visibility = 'hidden';
+                }
+
+                // Calculate percentage remaining
+                let percentage = (this.remainingTime / this.totalTime) * 100;
+
+                // Change colors based on percentage
+                let color = percentage <= 20 ? 'red' :
+                            percentage <= 40 ? 'yellow' : 'lightgreen';
+
+                // Apply color change to visible blocks
+                this.blocks.forEach(block => {
+                    if (block.style.visibility === 'visible') {
+                        block.style.backgroundColor = color;
+                    }
+                });
+
+                this.statusText.textContent = this.remainingTime > 0 ? this.remainingTime : 'TIME IS UP!';
+            } else {
+                this.stop();
+                this.timeIsUp = true;
+            }
+        }, 1000);
+    }
+
+    stop() {
+        clearInterval(this.interval);
+        this.interval = null;
+    }
+
+    reset() {
+        this.stop();
+        this.remainingTime = this.totalTime;
+        this.timeIsUp = false;
+        this.createUI();
+        this.statusText.textContent = 'READY';
+    }
+}
+
 class MainScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MainScene' });
@@ -331,6 +465,27 @@ class MainScene extends Phaser.Scene {
         }
     }
 
+    showTimer() {
+        this.timerContainer = this.add.dom(this.width / 4, (this.height) - this.height / 4).createFromHTML(`
+            <div style="border: solid 5px black;">
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: black; padding-bottom: 5px;">
+                    <span style="color: white; font-weight: bold;">TIMER</span>
+                    <span id="closeTimer" style="cursor: pointer; font-weight: bold; color: white;">[ X ]</span>
+                </div>
+                <div id="timerContainer" style="background: white;"></div>
+            </div>
+        `);
+        
+        this.timerContainer.getChildByID('closeTimer').addEventListener('click', () => {
+            this.timerContainer.destroy(); // Removes the timer window
+            // Show the button when timer is active
+            this.timerButton.setVisible(true);
+        });
+        
+        new CountdownTimer('timerContainer', 10);
+    }
+
+////
     doDrills(arrayType = []) {
         if (arrayType.length === 0) {
             this.submitCustomArray();
@@ -340,9 +495,9 @@ class MainScene extends Phaser.Scene {
         // Set all & custom arrays to 'filteredVerses'
         this.filteredVerses = arrayType;
 
-        console.log("Array Used:" + JSON.stringify(this.filteredVerses)); // Debug output
+        //console.log("Array Used:" + JSON.stringify(this.filteredVerses)); // Debug output
 
-        //// Use and move or clear?
+        // Clear
         this.mainText.setText("");
         this.subText.setText("");
         const customForm = document.getElementById('customForm');
@@ -384,7 +539,22 @@ class MainScene extends Phaser.Scene {
         `);
         this.drillContainer.node.style.color = 'white';
         this.drillContainer.node.style.width = '80%';
-        
+
+
+    // Create a button that toggles the timer
+    this.timerButton = this.add.text(this.width / 4, (this.height) - this.height / 4, 'Show Timer', {
+        fontSize: '20px',
+        color: '#ffffff',
+        backgroundColor: '#000000',
+        padding: { x: 10, y: 5 }
+    }).setInteractive();
+
+    // Button click toggles the timer
+    this.timerButton.on('pointerdown', () => {
+        this.timerButton.setVisible(false);
+        this.showTimer();
+    });
+
         // Drill navigation logic
         let currentDrillIndex = 0;  // Start with the first drill
         
@@ -464,10 +634,6 @@ class MainScene extends Phaser.Scene {
             //if (localStorage.getItem("customArray")) localStorage.removeItem("customArray");
             this.doDrills(this.filteredVerses);
         } else {
-
-
-
-////
             // Load stored array
             if (localStorage.getItem("customArray")) {
                 this.customArray = JSON.parse(localStorage.getItem("customArray"));
@@ -520,33 +686,33 @@ class MainScene extends Phaser.Scene {
             // Store reference to 'this' outside the event listener
             const self = this; // Preserve reference to the class instance
             
-setTimeout(() => {
-    document.querySelectorAll('.verse-container').forEach(container => {
-        const verseId = container.dataset.id;
-        const verse = self.filteredVerses.find(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId);
-
-        if (verse) {
-            // Auto-select if it was previously stored
-            if (self.customArray.some(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId)) {
-                container.classList.add('selected');
-                container.style.backgroundColor = 'green';
-                this.updateSelections();
-            }
-
-            // Click event for selection
-            container.addEventListener('click', function() {
-                const isSelected = this.classList.toggle('selected');
-                this.style.backgroundColor = isSelected ? 'green' : 'black';
-
-                if (isSelected) {
-                    self.customArray.push(verse);
-                } else {
-                    self.customArray = self.customArray.filter(v => encodeURIComponent(v.name || v.verse_ul || v.book) !== verseId);
-                }
-            });
-        }
-    });
-}, 0);
+            setTimeout(() => {
+                document.querySelectorAll('.verse-container').forEach(container => {
+                    const verseId = container.dataset.id;
+                    const verse = self.filteredVerses.find(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId);
+            
+                    if (verse) {
+                        // Auto-select if it was previously stored
+                        if (self.customArray.some(v => encodeURIComponent(v.name || v.verse_ul || v.book) === verseId)) {
+                            container.classList.add('selected');
+                            container.style.backgroundColor = 'green';
+                            this.updateSelections();
+                        }
+            
+                        // Click event for selection
+                        container.addEventListener('click', function() {
+                            const isSelected = this.classList.toggle('selected');
+                            this.style.backgroundColor = isSelected ? 'green' : 'black';
+            
+                            if (isSelected) {
+                                self.customArray.push(verse);
+                            } else {
+                                self.customArray = self.customArray.filter(v => encodeURIComponent(v.name || v.verse_ul || v.book) !== verseId);
+                            }
+                        });
+                    }
+                });
+            }, 0);
             
             // Handle selection update
             document.getElementById('submitSelection').addEventListener('click', () => {
