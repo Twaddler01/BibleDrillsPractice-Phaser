@@ -330,8 +330,7 @@ class MainScene extends Phaser.Scene {
 
         // Function to create an edit icon if the corresponding value is available
         this.createEditIcon = (x, y, key, callback) => {
-            //if (!key) return null; // Only create the icon if the value exists
-
+            
             let editIcon = this.add.text(x, y, '[ EDIT ]', {
                 fontSize: '10px',
                 fill: '#ffff00',
@@ -342,7 +341,6 @@ class MainScene extends Phaser.Scene {
             return editIcon;
         }
     
-
         let labelWidth = this.colorText.x - 36;
         let labelHeightColor = this.colorText.y;
         let labelHeightCallType = this.callType.y;
@@ -391,6 +389,10 @@ class MainScene extends Phaser.Scene {
     }
 
     changeOptions() {
+        
+        // Hide timer button or window
+        if (this.timerContainer) this.timerContainer.destroy(); // Removes the timer window
+        if (this.timerButton) this.timerButton.visible = false;
 
         let backBtn = document.getElementById('backBtn');
         if (backBtn) backBtn.remove();
@@ -485,24 +487,51 @@ class MainScene extends Phaser.Scene {
         new CountdownTimer('timerContainer', 10);
     }
 
-////
     doDrills(arrayType = []) {
         if (arrayType.length === 0) {
             this.submitCustomArray();
             return;
         }
 
-        // Set all & custom arrays to 'filteredVerses'
-        this.filteredVerses = arrayType;
+    // Get checkbox state from saved setting
+    const boxChecked = localStorage.getItem('randomizeEnabled') === 'true';
 
-        //console.log("Array Used:" + JSON.stringify(this.filteredVerses)); // Debug output
+    // Create a fresh copy every time from the original
+    this.filteredVerses = boxChecked
+        ? [...arrayType].sort(() => Math.random() - 0.5)
+        : [...arrayType]; // always reset to a fresh copy
 
+        this.drillContainer = this.add.dom(this.width / 2, this.height / 3 + 50).createFromHTML(`
+                <button id="prevDrill" style="visibility: hidden;">Previous</button>
+                <button id="nextDrill">Next</button>
+                <label>Randomize Order <input type="checkbox" id="randomizeToggle"></label>
+                <div id="drillContent"></div>
+                <div id="drillAnswer"></div>
+                <button id="answerDrill">See Answer</button>
+        `);
+        this.drillContainer.node.style.color = 'white';
+        this.drillContainer.node.style.width = '80%';
+
+        // Update checkbox
+        const checkbox = document.getElementById('randomizeToggle');
+        checkbox.checked = boxChecked;
+    
+        // Add toggle logic
+        checkbox.addEventListener('change', () => {
+            const isChecked = checkbox.checked;
+            localStorage.setItem('randomizeEnabled', isChecked);
+            
+            if (this.drillContainer) this.drillContainer.destroy();
+            this.doDrills(arrayType); // Pass original array again
+        });
+        
         // Clear
         this.mainText.setText("");
         this.subText.setText("");
         const customForm = document.getElementById('customForm');
         if (customForm) customForm.remove();
 
+        // Create drill output
         const selectedCall = localStorage.getItem('selectedCall');
         let drillString = [];
         this.filteredVerses.forEach(item => {
@@ -529,32 +558,24 @@ class MainScene extends Phaser.Scene {
                 });
             }
         });
-        
-        this.drillContainer = this.add.dom(this.width / 4, this.height / 3 + 50).createFromHTML(`
-                <button id="prevDrill" style="visibility: hidden;">Previous</button>
-                <button id="nextDrill">Next</button>
-                <div id="drillContent"></div>
-                <div id="drillAnswer"></div>
-                <button id="answerDrill">See Answer</button>
-        `);
-        this.drillContainer.node.style.color = 'white';
-        this.drillContainer.node.style.width = '80%';
 
+if (!this.timerButton) {
+        // Create a button that toggles the timer
+        this.timerButton = this.add.text(this.width / 4, (this.height) - this.height / 4, 'Show Timer', {
+            fontSize: '20px',
+            color: '#ffffff',
+            backgroundColor: '#000000',
+            padding: { x: 10, y: 5 }
+        }).setInteractive();
 
-    // Create a button that toggles the timer
-    this.timerButton = this.add.text(this.width / 4, (this.height) - this.height / 4, 'Show Timer', {
-        fontSize: '20px',
-        color: '#ffffff',
-        backgroundColor: '#000000',
-        padding: { x: 10, y: 5 }
-    }).setInteractive();
-
-    // Button click toggles the timer
-    this.timerButton.on('pointerdown', () => {
-        this.timerButton.setVisible(false);
-        this.showTimer();
-    });
-
+        // Button click toggles the timer
+        this.timerButton.on('pointerdown', () => {
+            this.timerButton.setVisible(false);
+            this.showTimer();
+        });
+} else {
+    this.timerButton.setVisible(true);
+}
         // Drill navigation logic
         let currentDrillIndex = 0;  // Start with the first drill
         
@@ -830,6 +851,7 @@ class MainScene extends Phaser.Scene {
                 // Set to last page to setup drill next
                 this.currentPage = 2;
                 this.onChange = false;
+                this.timerButton.setVisible(true);
             }
             this.nextPage();
         });
