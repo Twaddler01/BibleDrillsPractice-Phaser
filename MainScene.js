@@ -224,35 +224,42 @@ class MainScene extends Phaser.Scene {
         this.height = this.scale.height;
 
         // **TOP BOX (Header UI)**
-        let topBox = this.add.rectangle(this.width / 2, this.height / 6, this.width * 0.9, this.height * 0.3, 0x0000ff);
-        topBox.setStrokeStyle(4, 0xffffff);
-        this.add.text(this.width / 2, this.height * 0.09, "BIBLE DRILLS PRACTICE", {
-            fontSize: 24,
-            color: "#ffffff"
-        }).setOrigin(0.5);
+        let topBox = this.add.rectangle(0, 0, this.width, this.height * 0.1, 0x0000ff).setOrigin(0);
+        //topBox.setVisible(false);
+        
+        // Padding (left and right)
+        let padding = this.width * 0.2;     // 20% padding
+        let availableWidth = this.width - padding * 2;
+        let topBox_fontSize = Math.floor(availableWidth / 10); // scale font based on available width
+        let verticalPosition = this.height * 0.1 * 0.5;
+
+        // Add the text, center it horizontally and vertically
+        this.add.text(this.width / 2, verticalPosition, "BIBLE DRILLS PRACTICE", {
+            fontSize: topBox_fontSize,
+            color: "#ffffff",
+        }).setOrigin(0.5, 0.5);
 
         // **MAIN BOX (Game Area)**
         this.mainBox = this.add.rectangle(
-            this.width / 2, 
-            this.height / 1.63, 
-            this.width * 0.9, 
-            this.height / 1.3, 
+            0, 
+            topBox.height, // Position below topBox
+            this.width, 
+            this.height - topBox.height,
             0x333333
-        );
-        this.mainBox.setStrokeStyle(4, 0xffffff);
+        ).setOrigin(0);
         
         // **Content Container for aligning text and buttons**
         this.centerY = this.mainBox.y;
         this.contentContainer = this.add.container(this.width / 2, this.centerY);
         
         // Create Title Text (Main Text)
-        this.mainText = this.add.text(0, -120, "", {
+        this.mainText = this.add.text(0, this.mainBox.height / 2.5, "", {
             fontSize: 28,
             color: "#ffffff"
         }).setOrigin(0.5);
         
         // Create Subtext Description (Sub Text)
-        this.subText = this.add.text(0, -40, "", {
+        this.subText = this.add.text(0, this.mainBox.height / 2.5 + 40, "", {
             fontSize: 20,
             color: "#ffffff",
             wordWrap: { width: this.mainBox.width * 0.8, useAdvancedWrap: true },
@@ -263,10 +270,10 @@ class MainScene extends Phaser.Scene {
         this.contentContainer.add([this.mainText, this.subText]);
 
         // **TOP BOX (Selected options)
-        let optionsBoxWidth = this.width * 0.9;
-        let optionsBoxHeight = this.height * 0.18;
+        let optionsBoxWidth = this.width;
+        let optionsBoxHeight = this.height * 0.3;
         let optionsBoxX = this.width / 2;
-        let optionsBoxY = this.height * 0.27;
+        let optionsBoxY = optionsBoxHeight * 1.3;
 
         // **CREATE A CONTAINER TO HOLD EVERYTHING**
         this.optionsContainer = this.add.container(optionsBoxX, optionsBoxY);
@@ -276,17 +283,16 @@ class MainScene extends Phaser.Scene {
             0, 0, // Use (0,0) since container handles positioning
             optionsBoxWidth, optionsBoxHeight,
             0x8c0f0f
-        );
-        topBoxOptions.setStrokeStyle(4, 0xffffff);
+        ).setOrigin(0.5, 1);
 
         // **DYNAMIC TEXT POSITIONS (RELATIVE TO THE CONTAINER)**
-        let baseX = -optionsBoxWidth / 2.8; // Start from left
-        let textY = -optionsBoxHeight / 3;
+        let baseX = (topBoxOptions.width * -0.5) / 1.2; // Start from left
+        let textY = (topBoxOptions.height * -1) / 1.1;
 
-        let fontSize = Math.max(16, this.width * 0.025); // Scale font size dynamically
+        let fontSize = Math.max(14, this.width * 0.05); // Scale font size dynamically
 
         // **Text val Position - 1 character space (~10px)**
-        let spacing = 10; 
+        let spacing = 20; 
 
         this.colorText = this.add.text(baseX, textY, 'Color:', { fontSize, fill: '#ffffff' });
         this.colorText_val = this.add.text(this.colorText.x + this.colorText.width + spacing, textY, 'NA', { fontSize, fill: '#ffffff' });
@@ -294,11 +300,11 @@ class MainScene extends Phaser.Scene {
         let versionText = this.add.text(this.colorText.width / 1.5, textY, 'Version:', { fontSize, fill: '#ffffff' });
         this.versionText_val = this.add.text(versionText.x + versionText.width + spacing, textY, 'NA', { fontSize, fill: '#ffffff' });
 
-        this.callType = this.add.text(baseX, textY + 30, 'Call Type:', { fontSize, fill: '#ffffff' });
-        this.callType_val = this.add.text(this.callType.x + this.callType.width + spacing, textY + 30, 'NA', { fontSize, fill: '#ffffff' });
+        this.callType = this.add.text(baseX, textY + 60, 'Call Type:', { fontSize, fill: '#ffffff' });
+        this.callType_val = this.add.text(this.callType.x + this.callType.width + spacing, textY + 60, 'NA', { fontSize, fill: '#ffffff' });
 
-        this.contentType = this.add.text(baseX, textY + 60, 'Content:', { fontSize, fill: '#ffffff' });
-        this.contentType_val = this.add.text(this.contentType.x + this.contentType.width + spacing, textY + 60, 'NA', { fontSize, fill: '#ffffff' });
+        this.contentType = this.add.text(baseX, textY + 120, 'Content:', { fontSize, fill: '#ffffff' });
+        this.contentType_val = this.add.text(this.contentType.x + this.contentType.width + spacing, textY + 120, 'NA', { fontSize, fill: '#ffffff' });
 
         // **ADD EVERYTHING TO THE CONTAINER**
         this.optionsContainer.add([
@@ -501,16 +507,18 @@ class MainScene extends Phaser.Scene {
         ? [...arrayType].sort(() => Math.random() - 0.5)
         : [...arrayType]; // always reset to a fresh copy
 
-        this.drillContainer = this.add.dom(this.width / 2, this.height / 3 + 50).createFromHTML(`
+        this.drillContainer = this.add.dom(this.width / 2, this.height / 2).createFromHTML(`
                 <button id="prevDrill" style="visibility: hidden;">Previous</button>
                 <button id="nextDrill">Next</button>
                 <label>Randomize Order <input type="checkbox" id="randomizeToggle"></label>
                 <div id="drillContent"></div>
                 <div id="drillAnswer"></div>
                 <button id="answerDrill">See Answer</button>
-        `);
+        `).setOrigin(1, 1);
         this.drillContainer.node.style.color = 'white';
-        this.drillContainer.node.style.width = '80%';
+        this.drillContainer.node.style.background = 'black';
+        this.drillContainer.node.style.width = '400px';
+        this.drillContainer.node.style.height = '200px';
 
         // Update checkbox
         const checkbox = document.getElementById('randomizeToggle');
@@ -858,7 +866,7 @@ if (!this.timerButton) {
     }
 
     createSelectionForm() {
-        this.formContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
+        this.formContainer = this.add.dom(this.width / 2, this.mainBox.height / 1.2).createFromHTML(`
             <div style="text-align: center; font-family: Arial; color: #ffffff;">
                 <div style="display: flex; justify-content: center; gap: 40px;">
                     <div>
@@ -906,7 +914,7 @@ if (!this.timerButton) {
 
     createSelectionForm2() {
         // Create the form container using Phaser DOM (add.dom())
-        this.formContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
+        this.formContainer = this.add.dom(this.width / 2, this.mainBox.height / 1.2).createFromHTML(`
             <div style="text-align: center; font-family: Arial; color: #ffffff;">
                 <div>
                     <strong>Call Type:</strong><br>
@@ -946,7 +954,7 @@ if (!this.timerButton) {
 
     createSelectionForm3() {
         // Create the form container using Phaser DOM (add.dom())
-        this.formContainer = this.add.dom(this.width / 2, this.centerY + 100).createFromHTML(`
+        this.formContainer = this.add.dom(this.width / 2, this.mainBox.height / 1.2).createFromHTML(`
             <div style="text-align: center; font-family: Arial; color: #ffffff;">
                 <div>
                     <strong>Included Content:</strong><br>
