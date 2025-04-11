@@ -99,42 +99,40 @@ htmlExport();
 
 // PHASER
 
-const MAX_WIDTH = 1280; // Max width for mobile portrait
-const MAX_HEIGHT = 1920; // Max height for mobile portrait
-const ASPECT_RATIO = 3 / 2; // Portrait aspect ratio (adjust as needed)
+// Phaser game configuration
+const MAX_WIDTH = 600; // Max width for mobile portrait
+const ASPECT_RATIO = 16 / 9; // Adjust if needed
 
+// Function to calculate dynamic game size
 function getGameSize() {
-    let width = Math.min(window.innerWidth, MAX_WIDTH); // Ensure the width is portrait-friendly
+    let width = Math.min(window.innerWidth, MAX_WIDTH);
     let height = Math.min(window.innerHeight, width * ASPECT_RATIO); // Maintain aspect ratio
 
     return { width, height };
 }
 
+// Get initial size
 const { width, height } = getGameSize();
 
+// Phaser configuration
 const config = {
     type: Phaser.AUTO,
-    scene: [MainScene],
+    width: width,
+    height: height,
+    parent: "game-container",
+    dom: { createContainer: true },
+    scene: [MainScene], // Load the scene
     scale: {
-        mode: Phaser.Scale.FIT, // FIT is good for preserving aspect ratio
-        autoCenter: Phaser.Scale.CENTER_BOTH, // Center the game
-        width: width,
-        height: height,
-        min: {
-            width: 320, // Minimum width for small devices
-            height: 480 // Minimum height for portrait screens
-        },
-        max: {
-            width: MAX_WIDTH, // Maximum width
-            height: MAX_HEIGHT // Maximum height (portrait-optimized)
-        }
+        mode: Phaser.Scale.RESIZE, // Auto-resize the game canvas
+        autoCenter: Phaser.Scale.CENTER_BOTH, // Center on resize
     }
 };
 
+// Initialize the game
 const game = new Phaser.Game(config);
 
-// Optional resize handler (may not be necessary if using Phaser's FIT mode)
+// Handle window resizing
 window.addEventListener("resize", () => {
     const { width, height } = getGameSize();
-    game.scale.resize(width, height);
+    game.scale.resize(width, height); // Resize the game canvas dynamically
 });
