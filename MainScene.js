@@ -655,6 +655,8 @@ if (!this.timerButton) {
             //if (localStorage.getItem("customArray")) localStorage.removeItem("customArray");
             this.doDrills(this.filteredVerses);
         } else {
+            
+            this.timerButton.setVisible(false);
             // Load stored array
             if (localStorage.getItem("customArray")) {
                 this.customArray = JSON.parse(localStorage.getItem("customArray"));
@@ -674,7 +676,7 @@ if (!this.timerButton) {
                     
                     <div id="verseSelectionContainer" 
                          style="text-align: left; display: inline-block; 
-                                max-height: 200px; overflow-y: auto; width: 100%;
+                                max-height: 180px; overflow-y: auto; width: 100%;
                                 border: 1px solid #ffffff; padding: 10px; border-radius: 5px;">
                         ${this.filteredVerses.map((verse, index) => {
                             // Determine what to display based on object structure

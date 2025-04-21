@@ -1,5 +1,5 @@
 CHANGES
-- Added Randomize option
 
 WIP
-- Need to fix alignment issues and update custom options to better fit (style save button properly)
+- Need to work on Custom (change) options ... require at least 1 selection for custom.
+- Need to update status display to Custom (array.length)
