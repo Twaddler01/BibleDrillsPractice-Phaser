@@ -155,9 +155,9 @@ class MainScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.json('bibleVerses', 'assets/bibleVerses.json');
-        this.load.json('keyPassages', 'assets/keyPassages.json');
-        this.load.json('bibleBooks', 'assets/bibleBooks.json');
+        this.load.json('bibleVerses', 'bibleVerses.json');
+        this.load.json('keyPassages', 'keyPassages.json');
+        this.load.json('bibleBooks', 'bibleBooks.json');
     }
 
     create() {
